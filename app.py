@@ -57,7 +57,7 @@ if analyze_btn and input_text:
         st.warning("まずはAPIキーを入力してください 🔑")
     else:
         # 空白削除の安全策
-        clean_key = api_key_input.strip()
+        genai.configure(api_key=api_key.strip())
         genai.configure(api_key=clean_key)
         
         # モデル設定（FlashがだめならProに自動フォールバックする仕組みではありませんが、最も安定する書き方にしています）
