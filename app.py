@@ -154,6 +154,7 @@ if analyze_btn and input_text:
     else:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
+
         # プログレス表示もWise風にシンプルにしたいところですが、標準スピナーを使用
         with st.spinner("Analyzing structure..."):
             try:
