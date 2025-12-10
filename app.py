@@ -1,7 +1,9 @@
 import streamlit as st
 import google.generativeai as genai
 import json
-
+# デバッグ用コード（エラー原因特定用）
+import importlib.metadata
+st.sidebar.error(f"現在のAIライブラリバージョン: {importlib.metadata.version('google-generativeai')}")
 # --- ページ設定 ---
 st.set_page_config(
     page_title="Visual English",
