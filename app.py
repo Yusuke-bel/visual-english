@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- カスタムCSS (Wise風) ---
+# --- Wise風デザインCSS ---
 st.markdown("""
 <style>
     .stApp { background-color: #F2F5F7; font-family: 'Inter', sans-serif; }
@@ -30,53 +30,68 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- レイアウト ---
 st.markdown('<div class="header-bg"></div>', unsafe_allow_html=True)
-
 col_spacer1, col_main, col_spacer2 = st.columns([1, 2, 1])
 
 with col_main:
     st.markdown('<div class="main-title">英文構造を、一瞬でクリアに。</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-title">Visual English Converter</div>', unsafe_allow_html=True)
 
+    # 入力エリア
     with st.container():
         st.markdown('<div class="input-card">', unsafe_allow_html=True)
         
-        # APIキー入力エリア
-        api_key_input = st.text_input("🔑 API Key (Google AI Studio)", type="password")
-        
+        with st.expander("🔑 API Key Settings", expanded=False):
+            # APIキー入力欄
+            api_key_input = st.text_input("Gemini API Key", type="password")
+
         st.markdown("##### 解析したい英文を入力")
-        input_text = st.text_area("hidden_label", placeholder="例: It feels like a lifetime since Joe Biden was in the Oval Office.", height=120, label_visibility="collapsed")
+        input_text = st.text_area(
+            "hidden_label",
+            placeholder="例: It feels like a lifetime since Joe Biden was in the Oval Office.",
+            height=120,
+            label_visibility="collapsed"
+        )
         
-        st.write("")
+        st.write("") 
         analyze_btn = st.button("構造を解析する", type="primary")
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 解析ロジック ---
-if analyze_btn and input_text:
+# --- 解析実行ロジック ---
+if analyze_btn:
+    # 1. まずAPIキーがあるかチェック
     if not api_key_input:
         st.warning("まずはAPIキーを入力してください 🔑")
+    elif not input_text:
+        st.warning("解析したい英文を入力してください 📝")
     else:
-        # 空白削除の安全策
-        genai.configure(api_key=api_key.strip())
-        genai.configure(api_key=clean_key)
-        
-        # モデル設定（FlashがだめならProに自動フォールバックする仕組みではありませんが、最も安定する書き方にしています）
-        model = genai.GenerativeModel('gemini-1.5-flash')
-
-        with st.spinner("Analyzing structure..."):
-            try:
+        # 2. キーの設定（ここで空白を自動削除！）
+        try:
+            clean_key = api_key_input.strip()  # 重要な修正：前後の空白を削除
+            genai.configure(api_key=clean_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            with st.spinner("Analyzing structure..."):
                 prompt = f"""
                 あなたは英語のプロです。以下の英文を解析し、JSONデータを作成してください。
                 対象: "{input_text}"
-                【JSON形式】
+                【出力形式: JSONのみ】
                 {{
-                    "translation": "自然な和訳",
-                    "point": "文法ポイント",
+                    "translation": "自然な日本語訳",
+                    "point": "文法や構造のポイントを一言で",
                     "blocks": [
-                        {{ "text": "英語", "meaning": "意味", "role": "役割", "bg_color": "#E3F2FD" }}
+                        {{
+                            "text": "英語のチャンク",
+                            "meaning": "意味",
+                            "role": "役割(S/V/O/C/M)",
+                            "bg_color": "#E3F2FD"
+                        }}
                     ],
-                    "dot_code": "Graphvizコード(rankdir=LR)"
+                    "dot_code": "Graphviz DOTコード（日本語ラベル、rankdir=LR）"
                 }}
+                配色は以下参考:
+                - S: #E3F2FD, V: #FBE9E7, O/C: #E8F5E9, M: #FFF3E0
                 Markdownなし、JSONのみ出力。
                 """
                 
@@ -84,6 +99,7 @@ if analyze_btn and input_text:
                 cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
                 data = json.loads(cleaned_text)
 
+                # --- 結果表示 ---
                 st.markdown("---")
                 st.markdown(f"""
                 <div class="result-section" style="border-left: 5px solid #2ED06E;">
@@ -95,6 +111,7 @@ if analyze_btn and input_text:
                 st.markdown("### 🧱 Structure Blocks")
                 blocks = data['blocks']
                 rows = [blocks[i:i + 4] for i in range(0, len(blocks), 4)]
+                
                 for row in rows:
                     cols = st.columns(4)
                     for i, block in enumerate(row):
@@ -106,12 +123,12 @@ if analyze_btn and input_text:
                                 <div class="block-role">{block['role']}</div>
                             </div>
                             """, unsafe_allow_html=True)
-                    st.write("")
+                    st.write("") 
 
                 st.markdown("### 🌳 Syntax Tree")
                 with st.expander("ツリー図で詳細を見る", expanded=True):
                     st.graphviz_chart(data['dot_code'])
 
-            except Exception as e:
-                st.error(f"エラーが発生しました: {e}")
-                st.info("ヒント: APIキーが「Create API key in new project」で作成されたものか確認してください。")
+        except Exception as e:
+            st.error("エラーが発生しました。APIキーが正しいか確認してください。")
+            st.code(e) # エラーの詳細を表示
