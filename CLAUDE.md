@@ -9,7 +9,7 @@
 - Color-coded structural blocks (Subject/Verb/Object/Complement/Modifier)
 - Graphviz syntax tree visualizations
 
-The AI backend uses Google's Gemini 1.5 Flash API for natural language processing.
+The AI backend uses Google's Gemini 2.5 Flash API for natural language processing.
 
 ## Codebase Structure
 
